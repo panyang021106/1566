@@ -6,17 +6,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdbool.h>
-// 队列节点结构体
-    typedef struct {
-        int row;
-        int col;
-        int distance;
-    } QueueNode;
-        // 栈节点结构体
-    typedef struct {
-        int row;
-        int col;
-    } StackNode;
+
 
 void carve_path(int row, int col, Maze* maze);
 
@@ -91,6 +81,20 @@ void print_maze(const Maze* maze) {
         }
         printf("\n");
     }
+}
+int** maze_array(const Maze* maze) {
+    int** maze_array = (int**)malloc(MAZE_SIZE * sizeof(int*));
+    for (int i = 0; i < MAZE_SIZE; i++) {
+        maze_array[i] = (int*)malloc(MAZE_SIZE * sizeof(int));
+        for (int j = 0; j < MAZE_SIZE; j++) {
+            // Fill with zeros and ones based on maze cells
+        if (maze->cells[i][j] == 1) {
+            maze_array[i][j] = 1; // 用 '#' 表示墙
+            } else {
+                 maze_array[i][j] = 0; // 用 '.' 表示路径
+            }        }
+    }
+    return maze_array;
 }
 
 // 求解迷宫的函数，返回是否有解

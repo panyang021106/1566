@@ -23,4 +23,5 @@ void print_maze(const Maze* maze);
 int solve_maze(Maze* maze, int row, int col);
 int solve_maze_bfs(Maze* maze, int start_row, int start_col, int end_row, int end_col);
 int solve_maze_dfs_stack(Maze* maze, int start_row, int start_col, int end_row, int end_col);
+int** maze_array(const Maze*);
 #endif // MAZE_H

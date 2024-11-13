@@ -2,7 +2,7 @@ LIBS = -lXi -lXmu -lglut -lGLEW -lGLU -lm -lGL -lc
 
 all:  mouse
 
-mouse: mouse_lecture.c initShader.o myLib.o
+mouse: mouse_lecture.c initShader.o myLib.o maze.o
 	gcc -o mouse mouse_lecture.c initShader.o myLib.o maze.o $(LIBS)
 
 # triangle: triangle.c initShader.o myLib.o
@@ -23,4 +23,4 @@ initShader.o: initShader.c initShader.h
 	gcc -c initShader.c
 
 clean:
-	rm -f *.o  myLib.o
+	rm -f *.o  myLib.o maze.o initShader.o

@@ -120,6 +120,8 @@ void init(void)
     maze = (Maze*)malloc(sizeof(Maze));
     maze_generate(maze);
     print_maze(maze);
+    int** maze_arr;
+    maze_arr = maze_array(maze);
 
     current_vec = 0;
     GLuint program = initShader("vshader.glsl", "fshader.glsl");
