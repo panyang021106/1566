@@ -1,13 +1,16 @@
 #ifndef MAZE_H
 #define MAZE_H
 
-#define MAZE_SIZE 8
+#define MAZE_SIZE 15
 
 typedef struct {
-    int cells[MAZE_SIZE][MAZE_SIZE]; // 1 表示墙，0 表示路径
+    int cells[MAZE_SIZE][MAZE_SIZE];
 } Maze;
 
 void maze_generate(Maze* maze);
-void gen_maze(int begin_row, int end_row, int begin_column, int end_column, Maze* maze);
-
-#endif
+void carve_path(int row, int col, Maze* maze);
+void print_maze(const Maze* maze);
+int solve_maze(Maze* maze, int row, int col);
+int solve_maze_bfs(Maze* maze, int start_row, int start_col, int end_row, int end_col);
+int solve_maze_dfs_stack(Maze* maze, int start_row, int start_col, int end_row, int end_col);
+#endif // MAZE_H
