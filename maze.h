@@ -2,7 +2,17 @@
 #define MAZE_H
 
 #define MAZE_SIZE 15
-
+// 队列节点结构体
+    typedef struct {
+        int row;
+        int col;
+        int distance;
+    } QueueNode;
+        // 栈节点结构体
+    typedef struct {
+        int row;
+        int col;
+    } StackNode;
 typedef struct {
     int cells[MAZE_SIZE][MAZE_SIZE];
 } Maze;

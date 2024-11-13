@@ -18,6 +18,7 @@
 #include "mouse_lecture.h"
 #include <stdbool.h>
 #include <math.h>
+#include "maze.h"
 #define PI  3.14159
 int num_vertices;
 mat4 identity = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
@@ -26,6 +27,7 @@ mat4 current_scalar_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 mat4 current_translation_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 vec4 touch = {0,0,0,1};
 vec4 previous_roatation = (vec4){0,0,0,0};
+Maze *maze; 
 bool left_mouse = false;
 GLuint ctm_location;
 vec4 *positions;
@@ -115,6 +117,9 @@ void make_cube(float x, float y,float z, int texture, float width){
 }
 void init(void)
 {
+    maze = (Maze*)malloc(sizeof(Maze));
+    maze_generate(maze);
+    print_maze(maze);
 
     current_vec = 0;
     GLuint program = initShader("vshader.glsl", "fshader.glsl");
