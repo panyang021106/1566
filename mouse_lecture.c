@@ -115,6 +115,16 @@ void make_cube(float x, float y,float z, int texture, float width){
     }
     current_vec = current_vec + 36;
 }
+
+void make_base(){
+    float cube_size = 1.5 / MAZE_SIZE;
+    for(int i = 0; i < MAZE_SIZE; i ++){
+        for(int j = 0; j < MAZE_SIZE; j++){
+            make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5, 0,cube_size);
+        }
+    }
+}
+
 void init(void)
 {
     maze = (Maze*)malloc(sizeof(Maze));
@@ -126,12 +136,10 @@ void init(void)
     current_vec = 0;
     GLuint program = initShader("vshader.glsl", "fshader.glsl");
     glUseProgram(program);
-    num_vertices = 72;
+    num_vertices = 10000;
     positions = (vec4 *) malloc(sizeof(vec4) * num_vertices);
     tex_coords = (vec2 *) malloc(sizeof(vec2) * num_vertices);
-    make_cube(.5,.75,0,0,.5);
-    make_cube(.5,.25,0,1,.5);
-
+    make_base();
 
     randomize_colors();
 
