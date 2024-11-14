@@ -28,6 +28,7 @@ mat4 current_translation_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 vec4 touch = {0,0,0,1};
 vec4 previous_roatation = (vec4){0,0,0,0};
 Maze *maze; 
+int** maze_arr;
 bool left_mouse = false;
 GLuint ctm_location;
 vec4 *positions;
@@ -115,12 +116,30 @@ void make_cube(float x, float y,float z, int texture, float width){
     }
     current_vec = current_vec + 36;
 }
-
+float cube_size = 1.5 / MAZE_SIZE;
 void make_base(){
-    float cube_size = 1.5 / MAZE_SIZE;
+    for(int y = (int)(MAZE_SIZE / 2 + 1) ;y >= 0 ; y--){
+        for(int i = -y; i < y; i ++){
+            for(int j = -y; j <y; j++){
+                if(rand() % 100 <60)
+                    make_cube(cube_size / 2 + i * cube_size, cube_size / 2 + j * cube_size,y * cube_size - (int)(MAZE_SIZE / 2 + 1) * cube_size - .5, 3,cube_size);
+            }
+        }
+    }
+}
+
+void make_maze(){
     for(int i = 0; i < MAZE_SIZE; i ++){
         for(int j = 0; j < MAZE_SIZE; j++){
-            make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5, 0,cube_size);
+            if(maze_arr[i][j] == 1){
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size, 2,cube_size);
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size * 2, 2,cube_size);
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size * 3, 2,cube_size);
+            }
+            else{
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size, 0,cube_size);
+            }
+
         }
     }
 }
@@ -130,16 +149,16 @@ void init(void)
     maze = (Maze*)malloc(sizeof(Maze));
     maze_generate(maze);
     print_maze(maze);
-    int** maze_arr;
     maze_arr = maze_array(maze);
 
     current_vec = 0;
     GLuint program = initShader("vshader.glsl", "fshader.glsl");
     glUseProgram(program);
-    num_vertices = 10000;
+    num_vertices = 1000000;
     positions = (vec4 *) malloc(sizeof(vec4) * num_vertices);
     tex_coords = (vec2 *) malloc(sizeof(vec2) * num_vertices);
     make_base();
+    make_maze();
 
     randomize_colors();
 

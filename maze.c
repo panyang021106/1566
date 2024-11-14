@@ -8,8 +8,8 @@
 #include <stdbool.h>
 
 
-void carve_path(int row, int col, Maze* maze);
-
+int exit_col;
+int entrance_col;
 void maze_generate(Maze* maze) {
     // 初始化所有单元格为墙
     for (int i = 0; i < MAZE_SIZE; i++) {
@@ -25,7 +25,7 @@ void maze_generate(Maze* maze) {
     carve_path(1, 1, maze);
 
     // 设置入口和出口
-    maze->cells[1][0] = 0; // 左上角的入口
+    maze->cells[3][0] = 0; // 左上角的入口
     maze->cells[MAZE_SIZE -1][1] = 0; // 出口
 
     // 确保倒数第二行有通道
@@ -62,10 +62,9 @@ void carve_path(int row, int col, Maze* maze) {
             // 移除墙壁，创建路径
             maze->cells[row + directions[i][0]][col + directions[i][1]] = 0;
             maze->cells[new_row][new_col] = 0;
-
-            // 递归雕刻新的路径
             carve_path(new_row, new_col, maze);
         }
+        
     }
 }
 
@@ -91,9 +90,11 @@ int** maze_array(const Maze* maze) {
         if (maze->cells[i][j] == 1) {
             maze_array[i][j] = 1; // 用 '#' 表示墙
             } else {
-                 maze_array[i][j] = 0; // 用 '.' 表示路径
+                maze_array[i][j] = 0; // 用 '.' 表示路径
+; // 用 '.' 表示路径
             }        }
     }
+
     return maze_array;
 }
 
