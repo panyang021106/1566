@@ -25,6 +25,7 @@ mat4 identity = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 mat4 current_transformation_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 mat4 current_scalar_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 mat4 current_translation_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
+mat4 current_rotation_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 vec4 touch = {0,0,0,1};
 vec4 previous_roatation = (vec4){0,0,0,0};
 Maze *maze; 
@@ -38,6 +39,12 @@ int current_vec;
 vec2 *tex_coords;
 float offsets[4][2] = {{0, 0},{.25, 0},{.5, 0},{.75, 0}};
 vec4 cube[36];
+
+void update(){
+    current_transformation_matrix = multiply_m4_m4(current_translation_matrix,multiply_m4_m4(current_rotation_matrix,current_scalar_matrix));
+    glutPostRedisplay();
+
+}
 void randomize_colors(){
     colors = (vec4 *) malloc(sizeof(vec4) * num_vertices);
     for(int i = 0; i < num_vertices - 2; i = i + 3){
@@ -234,48 +241,16 @@ void keyboard(unsigned char key, int mousex, int mousey)
         exit(0);
         #endif
     }
-    if(key == '1'){
-        if (mode == 0)return;
-        mode = 0;
-        init();
-    }
-    if (key == '2'){
-        if (mode == 1)return;
-        mode = 1;
-        init();
-    }
-    if (key == '3'){
-        if (mode == 2)return;
-        mode = 2;
-        init();
-    }
-    if (key == '4'){
-        if (mode == 7)return;
-        mode = 7;
-        init();
-    }
-    if (key == '5'){
-        if (mode == 8)return;
-        mode = 8;
-        init();
-    }
-    if (key == '6'){
-        if (mode == 9)return;
-        mode = 9;
-        init();
-    }
-    if(key == 'r'){
-        if(mode == 4) return;
-        mode = 4;
-        init();
-    }
+
+
+    // Update the translation matrix
+    update();
     // else if(key == 'u')
     // current_transformation_matrix = rotate_x(-45);
     // else if(key == 'd')
     // current_transformation_matrix = rotate_x(45);
     // else if(key == ' ')
     // current_transformation_matrix = m4_identity();
-    glutPostRedisplay();
 }
 //radius = 2, so no point is out of the sphere
 vec4 calculate_point(float x, float y){
@@ -321,8 +296,7 @@ void mouse(int button, int state, int x, int y) {
     else if (button == 4) { // Scroll down: zoom out
         current_scalar_matrix = multiply_m4_m4(scaling_m4(1/ 1.02, 1 /1.02, 1 / 1.02),current_scalar_matrix); 
     }
-    current_transformation_matrix = multiply_m4_m4(current_translation_matrix,current_scalar_matrix);
-    glutPostRedisplay();
+    update();
 }
 
 
@@ -346,25 +320,15 @@ void motion(int x, int y) {
     float deg = acos(dot); 
 
     rotation_matrix = rotation_axis_angle_m4(about_vector, deg);
-    current_translation_matrix = multiply_m4_m4(rotation_matrix, current_translation_matrix);
-    current_transformation_matrix = multiply_m4_m4(current_translation_matrix, current_scalar_matrix);
+    current_rotation_matrix = multiply_m4_m4(rotation_matrix, current_rotation_matrix);
     last_touch = touch;
     touch = current_touch;
-
-    glutPostRedisplay();
+    update();
 }
 
-void idle(){
-    if(!last_touch_exists) return;
-    vec4 about_vector = cross_product_v4(last_touch, touch);
-    about_vector = scalar_v4(about_vector, 1 /  magnitude_v4(about_vector));
-
-    float dot = dot_v4(touch, last_touch);
-    float deg = acos(dot); 
-
-    rotation_matrix = rotation_axis_angle_m4(about_vector, deg);
-    current_translation_matrix = multiply_m4_m4(rotation_matrix, current_translation_matrix);
-    current_transformation_matrix = multiply_m4_m4(current_translation_matrix, current_scalar_matrix);
+void idle()
+{
+    return;
 }
 
 int main(int argc, char **argv)
