@@ -37,21 +37,19 @@ vec4 *colors;
 int mode = 0;
 int current_vec;
 vec2 *tex_coords;
+vec4 *normals;
 float offsets[4][2] = {{0, 0},{.25, 0},{.5, 0},{.75, 0}};
 vec4 cube[36];
 GLfloat x_angle = 1.0;
 GLfloat y_angle = 0.0;
 GLfloat z_angle = 0.0;
 mat4 model_view; // model-view matrix uniform shader variable location
-GLfloat left = -1.25, right = 1.25;
-GLfloat bottom = -1.0, top = 1.0;
-GLfloat zNear = 0.5, zFar = 3.0;
 GLuint projection_location;
 GLuint model_view_location;
 mat4 projection;
-
-vec4 eye = {1, 0,2, 0};
-vec4 at = {1, 0.0, 0, 0};
+vec4 *ambient_colors;
+vec4 eye = {0, 0,1.5, 0};
+vec4 at = {0, 0.0, 0, 0};
 vec4 up = {0.0, 1, 0, 0.0};
 void update(){
     current_transformation_matrix = multiply_m4_m4(current_translation_matrix,multiply_m4_m4(current_rotation_matrix,current_scalar_matrix));
@@ -184,15 +182,16 @@ void init(void)
     print_maze(maze);
     maze_arr = maze_array(maze);
 
-    current_vec = 0;
     GLuint program = initShader("vshader.glsl", "fshader.glsl");
     glUseProgram(program);
-    num_vertices = 36;
+    num_vertices = 1000000;
     positions = (vec4 *) malloc(sizeof(vec4) * num_vertices);
     tex_coords = (vec2 *) malloc(sizeof(vec2) * num_vertices);
-    // make_base();
-    // make_maze();
-    make_cube(0,0,0,0,1);
+    normals = (vec4 *) malloc(sizeof(vec4) * num_vertices);
+    ambient_colors = (vec4 *) malloc(sizeof(vec4) * num_vertices);
+
+    make_base();
+    make_maze();
 
 
     randomize_colors();
@@ -341,13 +340,16 @@ void mouse(int button, int state, int x, int y) {
     // if(button == GLUT_RIGHT_BUTTON && state == GLUT_UP) {
     //     current_scalar_matrix = scaling_m4(1,1,1);
     // }
-    if (button == 3) { 
-        current_scalar_matrix = multiply_m4_m4(scaling_m4(1.02, 1.02, 1.02),current_scalar_matrix); 
+    if (button ==4) { 
+        eye = multiply_m4_vec4(scaling_m4(1.02, 1.02, 1.02),eye); 
     }
-    else if (button == 4) { // Scroll down: zoom out
-        current_scalar_matrix = multiply_m4_m4(scaling_m4(1/ 1.02, 1 /1.02, 1 / 1.02),current_scalar_matrix); 
+    else if (button == 3) { // Scroll down: zoom out
+        eye = multiply_m4_vec4(scaling_m4(1/ 1.02, 1 /1.02, 1 / 1.02),eye); 
     }
-    update();
+    vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
+	model_view = look_at(temp_eye, at, up);
+
+	glutPostRedisplay();
 }
 
 
@@ -372,9 +374,12 @@ void motion(int x, int y) {
 
     rotation_matrix = rotation_axis_angle_m4(about_vector, deg);
     current_rotation_matrix = multiply_m4_m4(rotation_matrix, current_rotation_matrix);
+    eye = multiply_m4_vec4(rotation_matrix, eye);
+    model_view = look_at(eye, at, up);
     last_touch = touch;
     touch = current_touch;
-    update();
+    glutPostRedisplay();
+
 }
 
 void idle()
