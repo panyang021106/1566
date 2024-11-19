@@ -51,6 +51,9 @@ vec4 *ambient_colors;
 vec4 eye = {0, 0,1.5, 0};
 vec4 at = {0, 0.0, 0, 0};
 vec4 up = {0.0, 1, 0, 0.0};
+GLuint use_texture_location;
+int use_texture = 0;
+
 void update(){
     current_transformation_matrix = multiply_m4_m4(current_translation_matrix,multiply_m4_m4(current_rotation_matrix,current_scalar_matrix));
     glutPostRedisplay();
@@ -72,19 +75,20 @@ void randomize_colors(){
 void make_cube(float x, float y,float z, int texture, float width){
     mat4 translation = translation_m4(x, y, z);
     float hw = width / 2;
-   cube[0] = (vec4){  hw, -hw,  hw, 1.0 };
+    cube[0] = (vec4){  hw, -hw,  hw, 1.0 };
     cube[1] = (vec4){ -hw,  hw,  hw, 1.0 };
     cube[2] = (vec4){ -hw, -hw,  hw, 1.0 };
     cube[3] = (vec4){  hw, -hw,  hw, 1.0 };
     cube[4] = (vec4){  hw,  hw,  hw, 1.0 };
     cube[5] = (vec4){ -hw,  hw,  hw, 1.0 };
 
-    cube[6]  = (vec4){  hw, -hw, -hw, 1.0 };
-    cube[7]  = (vec4){ -hw,  hw, -hw, 1.0 };
+    cube[7]  = (vec4){  hw, -hw, -hw, 1.0 };
+    cube[6]  = (vec4){ -hw,  hw, -hw, 1.0 };
     cube[8]  = (vec4){ -hw, -hw, -hw, 1.0 };
-    cube[9]  = (vec4){  hw, -hw, -hw, 1.0 };
+    cube[11]  = (vec4){  hw, -hw, -hw, 1.0 };
     cube[10] = (vec4){  hw,  hw, -hw, 1.0 };
-    cube[11] = (vec4){ -hw,  hw, -hw, 1.0 };
+    cube[9] = (vec4){ -hw,  hw, -hw, 1.0 };
+
 
     cube[12] = (vec4){  hw, -hw, -hw, 1.0 };
     cube[13] = (vec4){  hw,  hw,  hw, 1.0 };
@@ -93,19 +97,19 @@ void make_cube(float x, float y,float z, int texture, float width){
     cube[16] = (vec4){  hw,  hw, -hw, 1.0 };
     cube[17] = (vec4){  hw,  hw,  hw, 1.0 };
     
-    cube[18] = (vec4){ -hw, -hw, -hw, 1.0 };
-    cube[19] = (vec4){ -hw,  hw,  hw, 1.0 };
+    cube[19] = (vec4){ -hw, -hw, -hw, 1.0 };
+    cube[18] = (vec4){ -hw,  hw,  hw, 1.0 };
     cube[20] = (vec4){ -hw, -hw,  hw, 1.0 };
-    cube[21] = (vec4){ -hw, -hw, -hw, 1.0 };
+    cube[23] = (vec4){ -hw, -hw, -hw, 1.0 };
     cube[22] = (vec4){ -hw,  hw, -hw, 1.0 };
-    cube[23] = (vec4){ -hw,  hw,  hw, 1.0 };
+    cube[21] = (vec4){ -hw,  hw,  hw, 1.0 };
 
-    cube[24] = (vec4){  hw,  hw, -hw, 1.0 };
-    cube[25] = (vec4){ -hw,  hw,  hw, 1.0 };
+    cube[25] = (vec4){  hw,  hw, -hw, 1.0 };
+    cube[24] = (vec4){ -hw,  hw,  hw, 1.0 };
     cube[26] = (vec4){ -hw,  hw, -hw, 1.0 };
-    cube[27] = (vec4){  hw,  hw, -hw, 1.0 };
+    cube[29] = (vec4){  hw,  hw, -hw, 1.0 };
     cube[28] = (vec4){  hw,  hw,  hw, 1.0 };
-    cube[29] = (vec4){ -hw,  hw,  hw, 1.0 };
+    cube[27] = (vec4){ -hw,  hw,  hw, 1.0 };
 
     cube[30] = (vec4){  hw, -hw, -hw, 1.0 };
     cube[31] = (vec4){ -hw, -hw,  hw, 1.0 };
@@ -140,7 +144,7 @@ void make_base(){
         for(int i = -y; i < y; i ++){
             for(int j = -y; j <y; j++){
                 if(rand() % 100 <60)
-                    make_cube(cube_size / 2 + i * cube_size, cube_size / 2 + j * cube_size,y * cube_size - (int)(MAZE_SIZE / 2 + 1) * cube_size - .5, 3,cube_size);
+                    make_cube(cube_size / 2 + i * cube_size, cube_size / 2 + j * cube_size,y * cube_size - (int)(MAZE_SIZE / 2 + 1) * cube_size + .5, 3,cube_size);
             }
         }
     }
@@ -150,12 +154,12 @@ void make_maze(){
     for(int i = 0; i < MAZE_SIZE; i ++){
         for(int j = 0; j < MAZE_SIZE; j++){
             if(maze_arr[i][j] == 1){
-                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size, 2,cube_size);
-                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size * 2, 2,cube_size);
-                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size * 3, 2,cube_size);
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,.5 + cube_size, 2,cube_size);
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,.5 + cube_size * 2, 2,cube_size);
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,.5 + cube_size * 3, 2,cube_size);
             }
             else{
-                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,0-.5 + cube_size, 0,cube_size);
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size,.5 + cube_size, 0,cube_size);
             }
 
         }
@@ -190,8 +194,9 @@ void init(void)
     normals = (vec4 *) malloc(sizeof(vec4) * num_vertices);
     ambient_colors = (vec4 *) malloc(sizeof(vec4) * num_vertices);
 
-    make_base();
-    make_maze();
+    // make_base();
+    // make_maze();
+    make_cube(0,0,0,0,.5);
 
 
     randomize_colors();
@@ -201,66 +206,83 @@ void init(void)
     int tex_width = 64;
     int tex_height = 64;
     GLubyte my_texels[tex_width][tex_height][3];
+
     FILE *fp = fopen("textures01.raw", "r");
+    if(fp == NULL) {
+	printf("[textureTemplate] Successfully open a texture file.\n");
+	exit(0);
+    }
     fread(my_texels, tex_width * tex_height * 3, 1, fp);
     fclose(fp);
+
+    glUseProgram(program);
 
     GLuint mytex[1];
     glGenTextures(1, mytex);
     glBindTexture(GL_TEXTURE_2D, mytex[0]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_width, tex_height, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, my_texels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_width, tex_height, 0, GL_RGB, GL_UNSIGNED_BYTE, my_texels);
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+
     int param;
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &param);
 
     GLuint vao;
-    #ifndef __APPLE_
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    #else
+    #ifdef __APPLE__
     glGenVertexArraysAPPLE(1, &vao);
     glBindVertexArrayAPPLE(vao);
+    #else
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
     #endif
-       GLuint buffer;
+
+    GLuint buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vec4) * 2 * num_vertices + sizeof(vec2) * num_vertices, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec4) * 3 * num_vertices + sizeof(vec2) * num_vertices, NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4) * num_vertices, positions);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * num_vertices, sizeof(vec4) * num_vertices, colors);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * 2 * num_vertices, sizeof(vec2) * num_vertices, tex_coords);
-
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * 2 * num_vertices, sizeof(vec4) * num_vertices, normals);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * 3 * num_vertices, sizeof(vec2) * num_vertices, tex_coords);
 
     GLuint vPosition = glGetAttribLocation(program, "vPosition");
     glEnableVertexAttribArray(vPosition);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid *) 0);
 
-
     GLuint vColor = glGetAttribLocation(program, "vColor");
     glEnableVertexAttribArray(vColor);
-    glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid *)
-    (sizeof(vec4) * num_vertices));
-    GLuint vTexCoord = glGetAttribLocation(program,"vTexCoord");
+    glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid *) (sizeof(vec4) * num_vertices));
+
+    GLuint vNormal = glGetAttribLocation(program, "vNormal");
+    glEnableVertexAttribArray(vNormal);
+    glVertexAttribPointer(vNormal, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid *) (sizeof(vec4) * 2 * num_vertices));
+
+    GLuint vTexCoord = glGetAttribLocation(program, "vTexCoord");
     glEnableVertexAttribArray(vTexCoord);
-    glVertexAttribPointer(vTexCoord,2,GL_FLOAT,GL_FALSE, 0, (GLvoid *) (sizeof(vec4) * num_vertices  + sizeof(vec4) * num_vertices));
+    glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *) (sizeof(vec4) * 3 * num_vertices));
+
+    ctm_location = glGetUniformLocation(program, "ctm");
+    model_view_location = glGetUniformLocation(program, "model_view");
+    projection_location = glGetUniformLocation(program, "projection");
+    
     GLuint texture_location = glGetUniformLocation(program, "texture");
     glUniform1i(texture_location, 0);
-    ctm_location = glGetUniformLocation(program, "ctm");
-    model_view_location = glGetUniformLocation( program, "model_view" );
-    projection_location = glGetUniformLocation( program, "projection" );    
+
+    use_texture_location = glGetUniformLocation(program, "use_texture");
+    glUniform1i(use_texture_location, use_texture);
+
     model_view = look_at(eye, at, up);
     projection = frustum(-1, 1, -1, 1, -1, -100);
-    current_transformation_matrix = identity_ctm;
-    print_m4(model_view);
-    print_m4(projection);
+
+    
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glDepthRange(1,0);
 }
+int isAnimating = 1;
 void display(void){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUniformMatrix4fv(model_view_location, 1, GL_FALSE, (GLfloat *) &model_view);
@@ -274,7 +296,6 @@ void display(void){
 
     glutSwapBuffers();
 }
-int isAnimating = 1;
 
 void keyboard(unsigned char key, int mousex, int mousey)
 {
@@ -289,29 +310,19 @@ void keyboard(unsigned char key, int mousex, int mousey)
 	isAnimating ^= 0x1;
     }
     else if(key == 'w') {
-	x_angle -= 1.0;
-	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
-	model_view = look_at(temp_eye, at, up);
-	glutPostRedisplay();
+	eye = add_v4(eye,(vec4){.02,0,0});
     }
     else if(key == 's') {
-	x_angle += 1.0;
 	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
-	model_view = look_at(temp_eye, at, up); 
-	glutPostRedisplay();
     }
     else if(key == 'a') {
-	y_angle -= 1.0;
 	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
-	model_view = look_at(temp_eye, at, up);
-	glutPostRedisplay();
     }
     else if(key == 'd') {
-	y_angle += 1.0;
 	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
-	model_view = look_at(temp_eye, at, up);
-	glutPostRedisplay();
     }
+    model_view = look_at(eye, at, up);
+	glutPostRedisplay();
    
 }
 void mouse(int button, int state, int x, int y) {

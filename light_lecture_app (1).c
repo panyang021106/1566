@@ -232,7 +232,7 @@ void init(void)
 
     cube_ctm = translate(2, 0, 0);
     
-    glEnable(GL_CULL_FACE);
+  //  glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glDepthRange(1,0);
@@ -255,6 +255,8 @@ void display(void)
 
     glutSwapBuffers();
 }
+
+
 
 void keyboard(unsigned char key, int mousex, int mousey)
 {

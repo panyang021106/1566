@@ -1,7 +1,7 @@
 #ifndef MAZE_H
 #define MAZE_H
 
-#define MAZE_SIZE 30
+#define MAZE_SIZE 15
 // 队列节点结构体
     typedef struct {
         int row;
