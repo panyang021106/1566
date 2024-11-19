@@ -21,7 +21,7 @@
 #include "maze.h"
 #define PI  3.14159
 int num_vertices;
-mat4 identity = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
+mat4 identity_ctm = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 mat4 current_transformation_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 mat4 current_scalar_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 mat4 current_translation_matrix = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
@@ -39,7 +39,20 @@ int current_vec;
 vec2 *tex_coords;
 float offsets[4][2] = {{0, 0},{.25, 0},{.5, 0},{.75, 0}};
 vec4 cube[36];
+GLfloat x_angle = 1.0;
+GLfloat y_angle = 0.0;
+GLfloat z_angle = 0.0;
+mat4 model_view; // model-view matrix uniform shader variable location
+GLfloat left = -1.25, right = 1.25;
+GLfloat bottom = -1.0, top = 1.0;
+GLfloat zNear = 0.5, zFar = 3.0;
+GLuint projection_location;
+GLuint model_view_location;
+mat4 projection;
 
+vec4 eye = {1, 0,2, 0};
+vec4 at = {1, 0.0, 0, 0};
+vec4 up = {0.0, 1, 0, 0.0};
 void update(){
     current_transformation_matrix = multiply_m4_m4(current_translation_matrix,multiply_m4_m4(current_rotation_matrix,current_scalar_matrix));
     glutPostRedisplay();
@@ -151,6 +164,19 @@ void make_maze(){
     }
 }
 
+
+vec4 calculate_point(float x, float y){
+    float z;
+    if(x * x + y * y >= 1){
+        return (vec4){0,0,0,1};
+    }
+    z = sqrt(1 - x * x - y * y);
+    vec4 a = (vec4){x,y,z,0};
+    // //printf("%.6f",magnitude_v4(a));
+    //printf("%.6f,%.6f",x,y);
+    return scalar_v4(a,1 / magnitude_v4(a));
+}
+
 void init(void)
 {
     maze = (Maze*)malloc(sizeof(Maze));
@@ -161,11 +187,13 @@ void init(void)
     current_vec = 0;
     GLuint program = initShader("vshader.glsl", "fshader.glsl");
     glUseProgram(program);
-    num_vertices = 1000000;
+    num_vertices = 36;
     positions = (vec4 *) malloc(sizeof(vec4) * num_vertices);
     tex_coords = (vec2 *) malloc(sizeof(vec2) * num_vertices);
-    make_base();
-    make_maze();
+    // make_base();
+    // make_maze();
+    make_cube(0,0,0,0,1);
+
 
     randomize_colors();
 
@@ -198,17 +226,20 @@ void init(void)
     glGenVertexArraysAPPLE(1, &vao);
     glBindVertexArrayAPPLE(vao);
     #endif
-    GLuint buffer;
+       GLuint buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vec4)  * num_vertices  + sizeof(vec4) * num_vertices + sizeof(vec2) * num_vertices, NULL,
-    GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec4) * 2 * num_vertices + sizeof(vec2) * num_vertices, NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vec4) * num_vertices, positions);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * num_vertices, sizeof(vec4) * num_vertices,colors);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * num_vertices + sizeof(vec4) * num_vertices, sizeof(vec2) * num_vertices,tex_coords);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * num_vertices, sizeof(vec4) * num_vertices, colors);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vec4) * 2 * num_vertices, sizeof(vec2) * num_vertices, tex_coords);
+
+
     GLuint vPosition = glGetAttribLocation(program, "vPosition");
     glEnableVertexAttribArray(vPosition);
-    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid *) (0));
+    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid *) 0);
+
+
     GLuint vColor = glGetAttribLocation(program, "vColor");
     glEnableVertexAttribArray(vColor);
     glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid *)
@@ -219,50 +250,70 @@ void init(void)
     GLuint texture_location = glGetUniformLocation(program, "texture");
     glUniform1i(texture_location, 0);
     ctm_location = glGetUniformLocation(program, "ctm");
-    // glEnable(GL_CULL_FACE);
+    model_view_location = glGetUniformLocation( program, "model_view" );
+    projection_location = glGetUniformLocation( program, "projection" );    
+    model_view = look_at(eye, at, up);
+    projection = frustum(-1, 1, -1, 1, -1, -100);
+    current_transformation_matrix = identity_ctm;
+    print_m4(model_view);
+    print_m4(projection);
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glDepthRange(1,0);
 }
 void display(void){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glUniformMatrix4fv(ctm_location, 1, GL_FALSE, (GLfloat *)
-    &current_transformation_matrix);
+    glUniformMatrix4fv(model_view_location, 1, GL_FALSE, (GLfloat *) &model_view);
+    glUniformMatrix4fv(projection_location, 1, GL_FALSE, (GLfloat *) &projection);
+    
+    
+
+    glUniformMatrix4fv(ctm_location, 1, GL_FALSE, (GLfloat *) &identity_ctm);
     glDrawArrays(GL_TRIANGLES, 0, num_vertices);
+
+
     glutSwapBuffers();
 }
+int isAnimating = 1;
+
 void keyboard(unsigned char key, int mousex, int mousey)
 {
     if(key == 'q') {
-        #ifndef __APPLE__
-        glutLeaveMainLoop();
-        #else
-        exit(0);
-        #endif
+	#ifndef __APPLE__
+	exit(0);
+	#else
+	glutLeaveMainLoop();
+	#endif
     }
-
-
-    // Update the translation matrix
-    update();
-    // else if(key == 'u')
-    // current_transformation_matrix = rotate_x(-45);
-    // else if(key == 'd')
-    // current_transformation_matrix = rotate_x(45);
-    // else if(key == ' ')
-    // current_transformation_matrix = m4_identity();
-}
-//radius = 2, so no point is out of the sphere
-vec4 calculate_point(float x, float y){
-    float z;
-    if(x * x + y * y >= 1){
-        return (vec4){0,0,0,1};
+    else if(key == ' ') {
+	isAnimating ^= 0x1;
     }
-    z = sqrt(1 - x * x - y * y);
-    vec4 a = (vec4){x,y,z,0};
-    // //printf("%.6f",magnitude_v4(a));
-    //printf("%.6f,%.6f",x,y);
-    return scalar_v4(a,1 / magnitude_v4(a));
+    else if(key == 'w') {
+	x_angle -= 1.0;
+	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
+	model_view = look_at(temp_eye, at, up);
+	glutPostRedisplay();
+    }
+    else if(key == 's') {
+	x_angle += 1.0;
+	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
+	model_view = look_at(temp_eye, at, up); 
+	glutPostRedisplay();
+    }
+    else if(key == 'a') {
+	y_angle -= 1.0;
+	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
+	model_view = look_at(temp_eye, at, up);
+	glutPostRedisplay();
+    }
+    else if(key == 'd') {
+	y_angle += 1.0;
+	vec4 temp_eye = multiply_m4_vec4(multiply_m4_m4(rotating_y_m4(y_angle), rotating_x_m4(x_angle)), eye);
+	model_view = look_at(temp_eye, at, up);
+	glutPostRedisplay();
+    }
+   
 }
 void mouse(int button, int state, int x, int y) {
     ////printf("%i %i %i %i\n", button, state, x, y);

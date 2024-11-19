@@ -62,6 +62,9 @@ mat4 rotating_y_m4(float);
 mat4 rotating_z_m4(float);
 mat4 m4_identity();
 mat4 rotation_axis_angle_m4(vec4, float);
+mat4 ortho(float left, float right, float bottom, float top, float near, float far);
+mat4 look_at(vec4 eye, vec4 center, vec4 up);
+mat4 frustum(float left, float right, float bottom, float top, float near, float far);
 
 // Do not put anything after this line
 

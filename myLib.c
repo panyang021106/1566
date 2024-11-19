@@ -356,21 +356,24 @@ mat4 rotation_axis_angle_m4(vec4 axis, float angle) {
 //     return ortho_matrix;
 // }
 
-mat4 look_at(vec4 eye, vec4 center, vec4 up) {
-    vec4 forward = normalize_v4(sub_v4(center, eye));
-    vec4 right = normalize_v4(cross_product_v4(forward, up));
-    vec4 true_up = cross_product_v4(right, forward);
-    mat4 view_matrix = {{right.x, true_up.x, -forward.x, 0},{right.y, true_up.y, -forward.y, 0},{right.z, true_up.z, -forward.z, 0},{ -dot_v4(right, eye),-dot_v4(true_up, eye),dot_v4(forward, eye),1}};
-    return view_matrix;
+mat4 look_at(vec4 eye, vec4 at, vec4 up) {
+    vec4 z = normalize_v4(sub_v4(eye,at)); // 
+    vec4 x = normalize_v4(cross_product_v4(up,z)); //n
+    vec4 y = normalize_v4(cross_product_v4(z, x));
+    mat4 view_matrix = {{x.x, y.x,z.x, eye.x},
+    {x.y, y.y,z.y, eye.y},
+    {x.z, y.z,z.z, eye.z},
+    {0, 0,0, 1}};
+    return inverse_m4(transpose_m4(view_matrix));
+    //n = z prime,
+    //q0 is eyex, eyey, eyez 
 }
 
 mat4 frustum(float left, float right, float bottom, float top, float near, float far) {
     mat4 frustum_matrix = {
-        {2 * near / (right - left), 0, 0, 0},
-        {0, 2 * near / (top - bottom), 0, 0},
-        {   (right + left) / (right - left),
-            (top + bottom) / (top - bottom),
-            -(far + near) / (far - near),
-            -1},{0, 0, -2 * far * near / (far - near), 0}};
+        {-2 * near / (right - left), 0, 0, 0},
+        {0, -2 * near / (top - bottom), 0, 0},
+        {   (right + left) / (right - left),(top + bottom) / (top - bottom),(far + near) / (far - near),-1},
+        {0, 0, -2 * far * near / (far - near), 0}};
     return frustum_matrix;
 }
