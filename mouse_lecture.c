@@ -81,14 +81,18 @@ void make_cube(float x, float y,float z, int texture, float width){
     cube[3] = (vec4){  hw, -hw,  hw, 1.0 };
     cube[4] = (vec4){  hw,  hw,  hw, 1.0 };
     cube[5] = (vec4){ -hw,  hw,  hw, 1.0 };
-
+    for(int i = 0; i < 6; i ++){
+        normals[i + current_vec] = (vec4){0,0,1,0};
+    }
     cube[7]  = (vec4){  hw, -hw, -hw, 1.0 };
     cube[6]  = (vec4){ -hw,  hw, -hw, 1.0 };
     cube[8]  = (vec4){ -hw, -hw, -hw, 1.0 };
     cube[11]  = (vec4){  hw, -hw, -hw, 1.0 };
     cube[10] = (vec4){  hw,  hw, -hw, 1.0 };
     cube[9] = (vec4){ -hw,  hw, -hw, 1.0 };
-
+    for(int i = 6; i < 12; i ++){
+        normals[i + current_vec] = (vec4){0,0,-1,0};
+    }
 
     cube[12] = (vec4){  hw, -hw, -hw, 1.0 };
     cube[13] = (vec4){  hw,  hw,  hw, 1.0 };
@@ -96,28 +100,36 @@ void make_cube(float x, float y,float z, int texture, float width){
     cube[15] = (vec4){  hw, -hw, -hw, 1.0 };
     cube[16] = (vec4){  hw,  hw, -hw, 1.0 };
     cube[17] = (vec4){  hw,  hw,  hw, 1.0 };
-    
+    for(int i = 12; i < 18; i ++){
+        normals[i + current_vec] = (vec4){1,0,0,0};
+    }
     cube[19] = (vec4){ -hw, -hw, -hw, 1.0 };
     cube[18] = (vec4){ -hw,  hw,  hw, 1.0 };
     cube[20] = (vec4){ -hw, -hw,  hw, 1.0 };
     cube[23] = (vec4){ -hw, -hw, -hw, 1.0 };
     cube[22] = (vec4){ -hw,  hw, -hw, 1.0 };
     cube[21] = (vec4){ -hw,  hw,  hw, 1.0 };
-
+    for(int i = 18; i < 24; i ++){
+        normals[i + current_vec] = (vec4){-1,0,0,0};
+    }
     cube[25] = (vec4){  hw,  hw, -hw, 1.0 };
     cube[24] = (vec4){ -hw,  hw,  hw, 1.0 };
     cube[26] = (vec4){ -hw,  hw, -hw, 1.0 };
     cube[29] = (vec4){  hw,  hw, -hw, 1.0 };
     cube[28] = (vec4){  hw,  hw,  hw, 1.0 };
     cube[27] = (vec4){ -hw,  hw,  hw, 1.0 };
-
+    for(int i = 24; i < 30; i ++){
+        normals[i + current_vec] = (vec4){0,1,0,0};
+    }
     cube[30] = (vec4){  hw, -hw, -hw, 1.0 };
     cube[31] = (vec4){ -hw, -hw,  hw, 1.0 };
     cube[32] = (vec4){ -hw, -hw, -hw, 1.0 };
     cube[33] = (vec4){  hw, -hw, -hw, 1.0 };
     cube[34] = (vec4){  hw, -hw,  hw, 1.0 };
     cube[35] = (vec4){ -hw, -hw,  hw, 1.0 };
-
+    for(int i = 30; i < 36; i ++){
+        normals[i + current_vec] = (vec4){0,-1,0,0};
+    }
     for(int i = 0; i < 36; i ++){
         positions[current_vec + i] = multiply_m4_vec4(translation,cube[i]);
     }
@@ -194,9 +206,8 @@ void init(void)
     normals = (vec4 *) malloc(sizeof(vec4) * num_vertices);
     ambient_colors = (vec4 *) malloc(sizeof(vec4) * num_vertices);
 
-    // make_base();
-    // make_maze();
-    make_cube(0,0,0,0,.5);
+    make_base();
+    make_maze();
 
 
     randomize_colors();
