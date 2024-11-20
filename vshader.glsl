@@ -7,6 +7,7 @@ attribute vec2 vTexCoord;
 
 varying vec4 color;
 varying vec4 N, V, L;
+varying float D;
 varying vec2 texCoord;
 
 uniform mat4 ctm, model_view, projection;
@@ -18,6 +19,7 @@ void main()
     N = normalize(model_view * ctm * vNormal);
     L = normalize(model_view * (light_position - ctm * vPosition));
     V = normalize(vec4(0, 0, 0, 1) - model_view * ctm * vPosition);
+	D = length(light_position - vPosition);
 
     color = vColor;
     texCoord = vTexCoord;

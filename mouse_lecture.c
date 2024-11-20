@@ -56,6 +56,7 @@ GLuint use_diffuse_location;
 GLuint use_ambient_location;
 GLuint light_position_location;
 GLuint use_specular_location;
+GLuint use_flashlight_location;
 int use_texture = 1;
 float far = -100;
 float near = -1;
@@ -66,6 +67,10 @@ float bottom = -1;
 int use_ambient = 1;
 int use_diffuse = 1;
 int use_specular = 1;
+vec4 light_position = {0, 0, 5, 1};
+float light_radius = 5.0;
+float light_angle = 0.0;
+int use_flashlight = 0;
 void update()
 {
     current_transformation_matrix = multiply_m4_m4(current_translation_matrix, multiply_m4_m4(current_rotation_matrix, current_scalar_matrix));
@@ -197,9 +202,6 @@ void make_base()
         }
     }
 }
-vec4 light_position = {5, 0, 4, 1};
-float sun_radius = 5.0;
-float sun_angle = 0.0;
 void make_maze()
 {
     for (int i = 0; i < MAZE_SIZE; i++)
@@ -388,6 +390,9 @@ void init(void)
     light_position_location = glGetUniformLocation(program,
     "light_position");
     glUniform4fv(light_position_location, 1, (GLvoid *) &light_position);
+   
+    use_flashlight_location = glGetUniformLocation(program, "use_flashlight");
+    glUniform1i(use_flashlight_location, use_flashlight);
 
     model_view = look_at(eye, at, up);
     projection = frustum(left, right, top, bottom, near, far);
@@ -481,15 +486,29 @@ void keyboard(unsigned char key, int mousex, int mousey)
         glUniform1i(use_texture_location, use_texture);
     }
     else if(key == 'y'){
-    use_ambient ^= 1;
-    glUniform1i(use_ambient_location, use_ambient);
-}    else if(key == 'u'){
-    use_diffuse ^= 1;
-    glUniform1i(use_diffuse_location, use_diffuse);
-}    else if(key == 'i'){
-    use_specular ^= 1;
-    glUniform1i(use_specular_location, use_specular);
-}
+        use_ambient ^= 1;
+        glUniform1i(use_ambient_location, use_ambient);
+    }    else if(key == 'u'){
+        use_diffuse ^= 1;
+        glUniform1i(use_diffuse_location, use_diffuse);
+    }    else if(key == 'i'){
+        use_specular ^= 1;
+        glUniform1i(use_specular_location, use_specular);
+    }
+    else if(key == '1'){
+        light_angle += 1;
+        light_position = (vec4){0,light_radius * cos(light_angle), light_radius * sin(light_angle),1};
+        glutPostRedisplay();
+    }
+    else if(key == '2'){
+        light_angle -= 1;
+        light_position = (vec4){0,light_radius * cos(light_angle), light_radius * sin(light_angle),1};
+        glutPostRedisplay();
+    }
+    else if(key == 'f'){
+        use_flashlight^= 1;
+        glUniform1i(use_flashlight_location, use_flashlight);
+    }
 }
 
 void mouse(int button, int state, int x, int y)
