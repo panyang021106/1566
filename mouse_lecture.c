@@ -54,6 +54,7 @@ vec4 up = {0.0, 1, 0, 0.0};
 GLuint use_texture_location;
 GLuint use_diffuse_location;
 GLuint use_ambient_location;
+GLuint light_position_location;
 GLuint use_specular_location;
 int use_texture = 1;
 float far = -100;
@@ -196,7 +197,9 @@ void make_base()
         }
     }
 }
-
+vec4 light_position = {5, 0, 4, 1};
+float sun_radius = 5.0;
+float sun_angle = 0.0;
 void make_maze()
 {
     for (int i = 0; i < MAZE_SIZE; i++)
@@ -241,6 +244,7 @@ vec4 calculate_point(float x, float y)
 
 void setup_lighting()
 {
+    return;
     // Ambient lighting
     vec4 *ambient_colors = (vec4 *)malloc(sizeof(vec4) * num_vertices);
     for (int i = 0; i < num_vertices; i++)
@@ -249,7 +253,6 @@ void setup_lighting()
     }
 
     // Diffuse lighting
-    vec4 light_position = {5, 0, 4, 1};
     vec4 *diffuse_colors = (vec4 *)malloc(sizeof(vec4) * num_vertices);
     for (int i = 0; i < num_vertices; i++)
     {
@@ -382,6 +385,10 @@ void init(void)
     use_specular_location = glGetUniformLocation(program, "use_specular");
     glUniform1i(use_specular_location, use_specular);
 
+    light_position_location = glGetUniformLocation(program,
+    "light_position");
+    glUniform4fv(light_position_location, 1, (GLvoid *) &light_position);
+
     model_view = look_at(eye, at, up);
     projection = frustum(left, right, top, bottom, near, far);
 
@@ -399,7 +406,7 @@ void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUniformMatrix4fv(model_view_location, 1, GL_FALSE, (GLfloat *)&model_view);
     glUniformMatrix4fv(projection_location, 1, GL_FALSE, (GLfloat *)&projection);
-
+    glUniform4fv(light_position_location, 1, (GLfloat *)&light_position);
     glUniformMatrix4fv(ctm_location, 1, GL_FALSE, (GLfloat *)&identity_ctm);
     glDrawArrays(GL_TRIANGLES, 0, num_vertices);
 
