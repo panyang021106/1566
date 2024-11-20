@@ -17,8 +17,8 @@
 #include <stdio.h>
 #include "mouse_lecture.h"
 #include <stdbool.h>
-#include <math.h>
 #include "maze.h"
+#include <math.h>
 #define PI 3.14159
 int num_vertices;
 mat4 identity_ctm = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
@@ -38,7 +38,7 @@ int mode = 0;
 int current_vec;
 vec2 *tex_coords;
 vec4 *normals;
-float offsets[4][2] = {{0, 0}, {.25, 0}, {.5, 0}, {.75, 0}};
+float offsets[7][2] = {{0, 0}, {.25, 0}, {.5, 0}, {.75, 0},{0,.25},{0,.5},{0,.75}};
 vec4 cube[36];
 GLfloat x_angle = 1.0;
 GLfloat y_angle = 0.0;
@@ -54,7 +54,8 @@ vec4 up = {0.0, 1, 0, 0.0};
 GLuint use_texture_location;
 GLuint use_diffuse_location;
 GLuint use_ambient_location;
-int use_texture = 0;
+GLuint use_specular_location;
+int use_texture = 1;
 float far = -100;
 float near = -1;
 float left = -1;
@@ -63,6 +64,7 @@ float top = 1;
 float bottom = -1;
 int use_ambient = 1;
 int use_diffuse = 1;
+int use_specular = 1;
 void update()
 {
     current_transformation_matrix = multiply_m4_m4(current_translation_matrix, multiply_m4_m4(current_rotation_matrix, current_scalar_matrix));
@@ -189,7 +191,7 @@ void make_base()
             for (int j = -y; j < y; j++)
             {
                 if (rand() % 100 < 60)
-                    make_cube(cube_size / 2 + i * cube_size, cube_size / 2 + j * cube_size, y * cube_size - (int)(MAZE_SIZE / 2 + 1) * cube_size + .5, 3, cube_size);
+                    make_cube(cube_size / 2 + i * cube_size, cube_size / 2 + j * cube_size, y * cube_size - (int)(MAZE_SIZE / 2 + 1) * cube_size + .5, 6, cube_size);
             }
         }
     }
@@ -205,7 +207,15 @@ void make_maze()
             {
                 make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size, 2, cube_size);
                 make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size * 2, 2, cube_size);
+                if (rand() % 100 < 60)
                 make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size * 3, 2, cube_size);
+            }
+            if (maze_arr[i][j] == 2)
+            {
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size, 4, cube_size);
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size * 2, 4, cube_size);
+                if (rand() % 100 < 60)
+                make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size * 3, 4, cube_size);
             }
             else
             {
@@ -359,17 +369,18 @@ void init(void)
     model_view_location = glGetUniformLocation(program, "model_view");
     projection_location = glGetUniformLocation(program, "projection");
 
-    GLuint texture_location = glGetUniformLocation(program, "texture");
-    glUniform1i(texture_location, 0);
-
     use_texture_location = glGetUniformLocation(program, "use_texture");
     glUniform1i(use_texture_location, use_texture);
 
-    // use_ambient_location = glGetUniformLocation(program, "use_ambient");
-    // glUniform1i(use_ambient_location, use_ambient);
 
-    // use_diffuse_location = glGetUniformLocation(program, "use_defuse");
-    // glUniform1i(use_diffuse_location, use_diffuse);
+    use_ambient_location = glGetUniformLocation(program, "use_ambient");
+    glUniform1i(use_ambient_location, use_ambient);
+
+    use_diffuse_location = glGetUniformLocation(program, "use_diffuse");
+    glUniform1i(use_diffuse_location, use_diffuse);
+
+    use_specular_location = glGetUniformLocation(program, "use_specular");
+    glUniform1i(use_specular_location, use_specular);
 
     model_view = look_at(eye, at, up);
     projection = frustum(left, right, top, bottom, near, far);
@@ -458,6 +469,20 @@ void keyboard(unsigned char key, int mousex, int mousey)
         model_view = look_at(eye, at, up);
         glutPostRedisplay();
     }
+    else if(key == 't'){
+        use_texture ^= 1;
+        glUniform1i(use_texture_location, use_texture);
+    }
+    else if(key == 'y'){
+    use_ambient ^= 1;
+    glUniform1i(use_ambient_location, use_ambient);
+}    else if(key == 'u'){
+    use_diffuse ^= 1;
+    glUniform1i(use_diffuse_location, use_diffuse);
+}    else if(key == 'i'){
+    use_specular ^= 1;
+    glUniform1i(use_specular_location, use_specular);
+}
 }
 
 void mouse(int button, int state, int x, int y)

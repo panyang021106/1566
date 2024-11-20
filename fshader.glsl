@@ -8,6 +8,10 @@ uniform sampler2D texture;
 uniform int use_texture;
 
 vec4 ambient, diffuse, specular;
+uniform int use_ambient;
+uniform int use_diffuse;
+uniform int use_specular;
+
 
 void main()
 {
@@ -16,9 +20,27 @@ void main()
         vec4 NN = normalize(N);
         vec4 LL = normalize(L);
         vec4 VV = normalize(V);
-        ambient = 0.3 * the_color;
-        diffuse = max(dot(LL, NN), 0.0) * the_color;
-        gl_FragColor = ambient + diffuse;
+		if(use_ambient == 1){
+			ambient = 0.3 * the_color;
+		}
+		else{
+			ambient = vec4(0);
+		}
+		if(use_diffuse == 1){
+			diffuse = max(dot(LL, NN), 0.0) * the_color;
+		}
+		else{
+			diffuse = vec4(0);
+		}
+		if(use_specular == 1){
+		vec4 h = normalize(L + V);
+		float NH = max(dot(normalize(L + V),N),0);
+		specular = pow(NH,50) * the_color;
+		}
+		else{
+			specular = vec4(0);
+		}
+        gl_FragColor = ambient + diffuse  + specular;
     }
     else {
         vec4 NN = normalize(N);
@@ -26,6 +48,8 @@ void main()
         vec4 VV = normalize(V);
         ambient = 0.3 * color;
         diffuse = max(dot(LL, NN), 0.0) * color;
-	gl_FragColor = ambient + diffuse;
+		float NH = max(dot(normalize(L + V),N),0);
+		specular = pow(NH,50) * color;
+        gl_FragColor = ambient + diffuse  + specular;
     }
 }

@@ -10,34 +10,6 @@
 
 int exit_col;
 int entrance_col;
-void maze_generate(Maze* maze) {
-    // 初始化所有单元格为墙
-    for (int i = 0; i < MAZE_SIZE; i++) {
-        for (int j = 0; j < MAZE_SIZE; j++) {
-            maze->cells[i][j] = 1; // 1 表示墙
-        }
-    }
-
-    // 随机数种子
-    srand(time(NULL));
-
-    // 从 (1, 1) 开始生成迷宫，确保四周有围墙
-    carve_path(1, 1, maze);
-
-    // 设置入口和出口
-    maze->cells[3][0] = 0; // 左上角的入口
-    maze->cells[MAZE_SIZE -1][1] = 0; // 出口
-
-    // 确保倒数第二行有通道
-    for (int col = 1; col < MAZE_SIZE - 1; col++) {
-        if (maze->cells[MAZE_SIZE - 2][col] == 1) {
-            maze->cells[MAZE_SIZE - 2][col] = 0; // 在倒数第二行挖开一部分路径
-            break;
-        }
-    }
-}
-
-
 void carve_path(int row, int col, Maze* maze) {
     // 定义四个方向（上、右、下、左）
     int directions[4][2] = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
@@ -64,23 +36,53 @@ void carve_path(int row, int col, Maze* maze) {
             maze->cells[new_row][new_col] = 0;
             carve_path(new_row, new_col, maze);
         }
-        
     }
 }
 
-// 打印迷宫的函数
+void maze_generate(Maze* maze) {
+    // 初始化所有单元格为墙
+    for (int i = 0; i < MAZE_SIZE; i++) {
+        for (int j = 0; j < MAZE_SIZE; j++) {
+            maze->cells[i][j] = 1; // 初始化为普通墙
+        }
+    }
+
+    // 随机数种子
+    srand(time(NULL));
+
+    // 从 (1, 1) 开始生成迷宫，确保四周有围墙
+    maze->cells[1][1] = 0; // 设置初始点为通路
+    carve_path(1, 1, maze);
+
+    // 设置入口和出口
+    maze->cells[1][0] = 0; // 左上角的入口
+    maze->cells[MAZE_SIZE - 2][MAZE_SIZE - 1] = 0; // 右下角的出口
+
+    // 重新设置特殊墙
+    for (int i = 0; i < MAZE_SIZE; i++) {
+        for (int j = 0; j < MAZE_SIZE; j++) {
+            if (((i % 2 == 1 && j % 2 == 0) || (i % 2 == 0 && j % 2 == 1)) && maze->cells[i][j] == 1) {
+                maze->cells[i][j] = 2; // 将行或列只有一个是奇数的普通墙设置为特殊墙
+            }
+        }
+    }
+}
+
 void print_maze(const Maze* maze) {
     for (int i = 0; i < MAZE_SIZE; i++) {
         for (int j = 0; j < MAZE_SIZE; j++) {
             if (maze->cells[i][j] == 1) {
-                printf("# "); // 用 '#' 表示墙
+                printf("#"); // 普通墙
+            } else if (maze->cells[i][j] == 2) {
+                printf("@"); // 特殊墙
             } else {
-                printf(". "); // 用 '.' 表示路径
+                printf("x"); // 路径
             }
         }
         printf("\n");
     }
 }
+
 int** maze_array(const Maze* maze) {
     int** maze_array = (int**)malloc(MAZE_SIZE * sizeof(int*));
     for (int i = 0; i < MAZE_SIZE; i++) {
@@ -89,10 +91,15 @@ int** maze_array(const Maze* maze) {
             // Fill with zeros and ones based on maze cells
         if (maze->cells[i][j] == 1) {
             maze_array[i][j] = 1; // 用 '#' 表示墙
-            } else {
+        }
+        else if (maze->cells[i][j] ==2){
+            maze_array[i][j] = 2;
+        }
+         else {
                 maze_array[i][j] = 0; // 用 '.' 表示路径
 ; // 用 '.' 表示路径
-            }        }
+            }        
+    }
     }
 
     return maze_array;

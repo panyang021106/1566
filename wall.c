@@ -88,11 +88,6 @@ void print_maze(const Maze* maze) {
     }
 }
 
-int main() {
-    Maze maze;
-    maze_generate(&maze);
-    print_maze(&maze);
-    return 0;
-}
+
 
 
