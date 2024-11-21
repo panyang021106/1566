@@ -21,6 +21,9 @@
 #include <math.h>
 #define PI 3.14159
 int num_vertices;
+int current_state = 0;
+float alpha = 0;
+int current_look = 0;
 mat4 identity_ctm = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
 mat4 current_transformation_matrix = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
 mat4 current_scalar_matrix = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
@@ -51,19 +54,30 @@ vec4 *ambient_colors;
 vec4 eye = {0, 0, 2, 0};
 vec4 at = {0, 0.0, 0, 0};
 vec4 up = {0.0, 1, 0, 0.0};
+vec4 og_eye = {0, 0, 2, 0};
+vec4 og_at = {0, 0.0, 0, 0};
+vec4 spotlight_direction = {0, 0, -1,0};
+float spotlight_cutoff = 30;
+float spotlight_exponent = 2;   
+mat4 og_model_view;
+mat4 og_projection;
 GLuint use_texture_location;
 GLuint use_diffuse_location;
 GLuint use_ambient_location;
 GLuint light_position_location;
 GLuint use_specular_location;
 GLuint use_flashlight_location;
+GLuint spotlight_direction_location; 
+GLuint spotlight_cutoff_location;
+GLuint spotlight_position_location;
+vec4 spotlight_position;
 int use_texture = 1;
 float far = -100;
-float near = -1;
-float left = -1;
-float right = 1;
-float top = 1;
-float bottom = -1;
+float near = -.01;
+float left = -.01;
+float right = .01;
+float top = .01;
+float bottom = -.01;
 int use_ambient = 1;
 int use_diffuse = 1;
 int use_specular = 1;
@@ -71,7 +85,24 @@ vec4 light_position = {0, 5, 0, 1};
 float light_radius = 5.0;
 float light_angle = 0.0;
 int use_flashlight = 0;
-
+int current_step = 0;
+int current_i = -1;
+int current_j = -1;
+typedef enum {
+    NONE = 0,
+    FLYING_UP,
+    FLYING_DOWN,
+    WALK_FORWARD,
+    WALK_BACKWARD,
+    TURN_LEFT,
+    TURN_RIGHT,
+    LOOK_UP,
+    LOOK_DOWN,
+    TO_START,
+    ENTER_MAZE,
+    SLIDE_LEFT,
+    SLIDE_RIGHT
+} AnimationState;
 void randomize_colors()
 {
     colors = (vec4 *)malloc(sizeof(vec4) * num_vertices);
@@ -199,6 +230,8 @@ void make_base()
         }
     }
 }
+float maze_start_x;
+float maze_start_z;
 void make_maze()
 {
     for (int i = 0; i < MAZE_SIZE; i++)
@@ -222,6 +255,10 @@ void make_maze()
             else
             {
                 make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size, 0, cube_size);
+            }
+            if(i == 1 && j ==1){
+                maze_start_x = -.75 + cube_size / 2 + i * cube_size;
+                maze_start_z =  -.75 + cube_size / 2 + j * cube_size;
             }
         }
     }
@@ -283,9 +320,12 @@ void setup_lighting()
         colors[i] = add_v4(specular_colors[i], add_v4(diffuse_colors[i], ambient_colors[i]));
     }
 }
+vec4 entrance_at;
+vec4 entrance_eye;
 
 void init(void)
 {
+
     maze = (Maze *)malloc(sizeof(Maze));
     maze_generate(maze);
     print_maze(maze);
@@ -298,9 +338,10 @@ void init(void)
     tex_coords = (vec2 *)malloc(sizeof(vec2) * num_vertices);
     normals = (vec4 *)malloc(sizeof(vec4) * num_vertices);
     ambient_colors = (vec4 *)malloc(sizeof(vec4) * num_vertices);
-
     make_base();
     make_maze();
+    entrance_eye = (vec4){-maze_start_x,0,-maze_start_z + cube_size,0};
+    entrance_at = (vec4){-maze_start_x,0,-maze_start_z - cube_size,0};
 
     randomize_colors();
 
@@ -367,6 +408,19 @@ void init(void)
     glEnableVertexAttribArray(vTexCoord);
     glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(sizeof(vec4) * 3 * num_vertices));
 
+    GLuint spotlight_direction_location = glGetUniformLocation(program, "spotlight_direction");
+    spotlight_direction = at;
+    glUniform4fv(spotlight_direction_location, 1, (GLfloat *)&spotlight_direction);
+
+    GLuint spotlight_position_location = glGetUniformLocation(program, "spotlight_position");
+    spotlight_position = eye;
+    glUniform4fv(spotlight_position_location,1, (GLfloat *)&spotlight_position);
+
+    GLuint spotlight_cutoff_location = glGetUniformLocation(program, "spotlight_cutoff");
+    glUniform1f(spotlight_cutoff_location, spotlight_cutoff);
+
+    GLuint spotlight_exponent_location = glGetUniformLocation(program, "spotlight_exponent");
+    glUniform1f(spotlight_exponent_location, spotlight_exponent);
     ctm_location = glGetUniformLocation(program, "ctm");
     model_view_location = glGetUniformLocation(program, "model_view");
     projection_location = glGetUniformLocation(program, "projection");
@@ -388,11 +442,12 @@ void init(void)
     "light_position");
     glUniform4fv(light_position_location, 1, (GLvoid *) &light_position);
    
-    use_flashlight_location = glGetUniformLocation(program, "use_flashlight");
+    use_flashlight_location = glGetUniformLocation(program, "use_spotlight");
     glUniform1i(use_flashlight_location, use_flashlight);
-
     model_view = look_at(eye, at, up);
-    projection = frustum(left, right, top, bottom, near, far);
+    projection = frustum(left, right, bottom, top, near, far);
+    og_model_view = model_view;
+    og_projection = projection;
 
     print_v4(colors[0]);
 
@@ -402,7 +457,7 @@ void init(void)
     glDepthRange(1, 0);
     // glUniform1i(glGetUniformLocation(program, "enable_specular"), enable_specular);
 }
-int isAnimating = 0;
+int is_animating = 0;
 void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -427,64 +482,63 @@ void keyboard(unsigned char key, int mousex, int mousey)
     }
     else if (key == ' ')
     {
-        isAnimating ^= 0x1;
+        is_animating ^= 0x1;
     }
     else if (key == 'w')
     {
-        isAnimating = 0;
-        vec4 v = multiply_m4_vec4(current_rotation_matrix,(vec4){0,0,-.02,0});
-        eye = add_v4(eye,v);
-        at = add_v4(at,v);
-        model_view = look_at(eye, at, up);
-        glutPostRedisplay();
-        return;
+        if(is_animating) return;
+        is_animating = 1;
+        current_state = WALK_FORWARD;
     }
      else if (key == 's')
     {
-        isAnimating = 0;
-        vec4 v = multiply_m4_vec4(current_rotation_matrix,(vec4){0,0,.02,0});
-        eye = add_v4(eye,v);
-        at = add_v4(at,v);
-        model_view = look_at(eye, at, up);
-        glutPostRedisplay();
-        return;
+        if(is_animating) return;
+        is_animating = 1;
+        current_state = WALK_BACKWARD;
+        current_step = 0;
     }
      else if (key == 'a')
     {
-        isAnimating = 0;
-        vec4 v = multiply_m4_vec4(current_rotation_matrix,(vec4){-.02,0,0,0});
-        eye = add_v4(eye,v);
-        at = add_v4(at,v);
-        model_view = look_at(eye, at, up);
-        glutPostRedisplay();
-        return;
+        if(is_animating) return;
+        is_animating = 1;
+        current_state = SLIDE_LEFT;
+        current_step = 0;
     }
     else if (key == 'd')
     {
-        isAnimating = 0;
-        vec4 v = multiply_m4_vec4(current_rotation_matrix,(vec4){.02,0,0,0});
-        eye = add_v4(eye,v);
-        at = add_v4(at,v);
-        model_view = look_at(eye, at, up);
-        glutPostRedisplay();
-        return;
+        if(is_animating) return;
+        current_step = 0;
+        is_animating = 1;
+        current_state = SLIDE_RIGHT;
     }
     else if (key == 'e')
     {
-        isAnimating = 0;
-        eye = sub_v4((vec4){-2.0, 1.0, 2.0, 1.0}, eye);
-        at = sub_v4((vec4){0.0, 0.0, 0.0, 1.0},at);
-        up = sub_v4((vec4){0.0, 1.0, 0.0, 0.0}, up);
-        model_view = look_at(eye, at, up);
-        glutPostRedisplay();
+        if(is_animating) return;
+        current_step = 0;
+        is_animating = 1;
+        current_state = TO_START;
+    }
+        else if (key == '9')
+    {
+        if(is_animating) return;
+        current_step = 0;
+        is_animating = 1;
+        current_state = TURN_LEFT;
+    }    else if (key == '0')
+    {
+        if(is_animating) return;
+        current_step = 0;
+        is_animating = 1;
+        current_state = TURN_RIGHT;
     }
     else if(key == 't'){
+
         use_texture ^= 1;
         glUniform1i(use_texture_location, use_texture);
     }
     else if (key == 'n')
     {
-        isAnimating = 0;
+        is_animating = 0;
     
         vec4 direction = sub_v4(at, eye);
         mat4 rotation = rotating_y_m4(-5.0); 
@@ -496,7 +550,7 @@ void keyboard(unsigned char key, int mousex, int mousey)
     }
      else if (key == 'm')
     {
-        isAnimating = 0;
+        is_animating = 0;
     vec4 direction = sub_v4(at, eye);
     mat4 rotation = rotating_y_m4(5.0); 
     vec4 rotated_direction = multiply_m4_vec4(rotation, direction);
@@ -515,26 +569,37 @@ void keyboard(unsigned char key, int mousex, int mousey)
         glUniform1i(use_specular_location, use_specular);
     }
     else if(key == '1'){
-        light_angle += 1;
+        current_vec = 0;
+        light_angle += .2;
         light_position = (vec4){0,light_radius * cos(light_angle), light_radius * sin(light_angle),1};
         glutPostRedisplay();
     }
     else if(key == '2'){
-        light_angle -= 1;
+        light_angle -= .2;
         light_position = (vec4){0,light_radius * cos(light_angle), light_radius * sin(light_angle),1};
         glutPostRedisplay();
     }
     else if(key == 'f'){
+        if(use_flashlight){
+            light_position = eye;
+        }
+        else{
+            light_angle = 0;
+            light_position = (vec4){0,light_radius * cos(light_angle), light_radius * sin(light_angle),1};
+        }
         use_flashlight^= 1;
         glUniform1i(use_flashlight_location, use_flashlight);
     }
     else if(key == 'x'){
-    
+        if(is_animating)return;
+        is_animating = 1;
+        current_step = 0;
+        current_state = ENTER_MAZE;
     }
 }
 void mouse(int button, int state, int x, int y)
 {
-    ////printf("%i %i %i %i\n", button, state, x, y);
+    ///printf("%i %i %i %i\n", button, state, x, y);
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
     {
         float x_coordinate = (x * 2.0 / 511.0) - 1;
@@ -607,17 +672,147 @@ void motion(int x, int y)
     touch = current_touch;
     glutPostRedisplay();
 }
+bool valid_move(int i, int j){
+    //make_cube(-.75 + cube_size / 2 + i * cube_size, -.75 + cube_size / 2 + j * cube_size, .5 + cube_size, 0, cube_size);
+    printf("%d,%d\n",i,j);
+    return maze_arr[i][j] ==0;
+
+//     entrance_eye = (vec4){-maze_start_x,cube_size,-maze_start_z + cube_size,0};
+//     if maze_arr
+}
 
 void idle()
 {
-    if (isAnimating)
+    if (is_animating)
     {
-        x_angle += 0.1;
-        y_angle += 0.2;
-        identity_ctm = multiply_m4_m4(rotating_y_m4(x_angle),
-                                      multiply_m4_m4(translation_m4(2, 0, 0), rotating_x_m4(y_angle)));
-        z_angle -= 1;
-        // glutPostRedisplay();
+        if(current_state == TO_START){
+            current_step++;
+            alpha = (float)current_step /100;
+            current_transformation_matrix = add_m4(current_transformation_matrix,scalar_m4(identity_ctm,alpha));
+            model_view = add_m4(model_view,scalar_m4(og_model_view,alpha));
+            projection = add_m4(projection,scalar_m4(og_projection,alpha));
+ 
+            if(current_step == 100){
+                current_rotation_matrix = identity_ctm;
+                eye = og_eye;
+                at = og_at;
+                current_step = 0;
+                is_animating = 0;
+                projection = og_projection;
+                model_view = og_model_view;
+                current_transformation_matrix = identity_ctm;
+                current_i = -1;
+                current_j = -1;
+            }
+        }
+        if(current_state == ENTER_MAZE){
+            current_step++;
+            alpha = (float)current_step /100;
+            mat4 m = look_at(entrance_eye,entrance_at,up);
+            // current_transformation_matrix = add_m4(current_transformation_matrix,scalar_m4(identity_ctm,alpha));
+            model_view = add_m4(model_view,scalar_m4(m,alpha));
+            // projection = add_m4(projection,scalar_m4(og_projection,alpha));
+            if(current_step == 100){
+                current_rotation_matrix = identity_ctm;
+                eye = entrance_eye;
+                at = entrance_at;
+                current_step = 0;
+                is_animating = 0;
+                projection = og_projection;
+                current_transformation_matrix = identity_ctm;
+                model_view = look_at(entrance_eye,entrance_at,up);
+                current_i = MAZE_SIZE - 2;
+                current_j = MAZE_SIZE - 1;
+            }
+        }
+
+
+        if(current_state == WALK_FORWARD || current_state ==  WALK_BACKWARD || current_state ==  SLIDE_LEFT ||current_state ==  SLIDE_RIGHT){
+            current_step++;
+            alpha = (float)current_step /100;
+            float z_dif = 0;
+            float x_dif = 0;
+            int ti = current_i;
+            int tj = current_j;
+            if(current_state == WALK_FORWARD && current_look == 0 || current_state == SLIDE_RIGHT && current_look == 1 || current_state == WALK_BACKWARD && current_look == 2 || current_state == SLIDE_LEFT && current_look == 3){
+                z_dif = cube_size;
+                tj -= 1;
+            }
+            if(current_state == WALK_FORWARD && current_look == 2 || current_state == SLIDE_RIGHT && current_look == 3 || current_state == WALK_BACKWARD && current_look == 0 || current_state == SLIDE_LEFT && current_look == 1){
+                z_dif = -cube_size;
+                tj += 1;
+            }
+            if(current_state == WALK_FORWARD && current_look == 1 || current_state == SLIDE_RIGHT && current_look == 2 || current_state == WALK_BACKWARD && current_look == 3 || current_state == SLIDE_LEFT && current_look == 0){
+                x_dif = cube_size;
+                ti -= 1;
+            }
+            if(current_state == WALK_FORWARD && current_look == 3 || current_state == SLIDE_RIGHT && current_look == 0 || current_state == WALK_BACKWARD && current_look == 1 || current_state == SLIDE_LEFT && current_look == 2){
+                x_dif = -cube_size;
+                ti += 1;
+            }
+
+            vec4 next_eye = (vec4){eye.x - x_dif,eye.y,eye.z - z_dif,eye.w};
+            if(!valid_move(ti,tj)){
+                current_step = 0;
+                is_animating = 0;
+                return;
+            }
+            vec4 next_at = (vec4){at.x - x_dif,at.y,at.z - z_dif,eye.w};
+            mat4 m = look_at(next_eye,next_at,up);
+            // current_transformation_matrix = add_m4(current_transformation_matrix,scalar_m4(identity_ctm,alpha));
+            model_view = add_m4(model_view,scalar_m4(m,alpha));
+            // projection = add_m4(projection,scalar_m4(og_projection,alpha));
+            if(current_step == 100){
+                current_i = ti;
+                current_j = tj;
+                current_rotation_matrix = identity_ctm;
+                eye = next_eye;
+                at = next_at;
+                current_step = 0;
+                is_animating = 0;
+                projection = og_projection;
+                current_transformation_matrix = identity_ctm;
+                model_view = look_at(next_eye,next_at,up);
+            }
+
+        }
+
+        if(current_state == TURN_LEFT || current_state == TURN_RIGHT){
+            float c = 1;
+            if(current_state == TURN_RIGHT){
+                c = -1;
+            }
+            current_step++;
+            alpha = (float)current_step /100;
+            float z_dif = 0;
+            float x_dif = 0;
+            if(current_look ==0)
+                x_dif = 2 * c * cube_size;
+            if(current_look ==2)
+                x_dif = -2 * c * cube_size;
+            if(current_look ==3)
+                z_dif = 2 * c * cube_size;
+            if(current_look ==1)
+                z_dif = -2 * c * cube_size;
+            vec4 next_eye = eye;
+            vec4 next_at = (vec4){eye.x - x_dif,eye.y,eye.z - z_dif,eye.w};
+            mat4 m = look_at(next_eye,next_at,up);
+            // current_transformation_matrix = add_m4(current_transformation_matrix,scalar_m4(identity_ctm,alpha));
+            model_view = add_m4(model_view,scalar_m4(m,alpha));
+            // projection = add_m4(projection,scalar_m4(og_projection,alpha));
+            if(current_step == 100){
+                current_look = (current_look + (int)c) % 4;
+                if (current_look == -1) current_look = 3;
+                current_rotation_matrix = identity_ctm;
+                eye = next_eye;
+                at = next_at;
+                current_step = 0;
+                is_animating = 0;
+                projection = og_projection;
+                current_transformation_matrix = identity_ctm;
+                model_view = look_at(next_eye,next_at,up);
+            }
+        }
     }
     glutPostRedisplay();
 }

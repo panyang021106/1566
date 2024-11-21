@@ -65,6 +65,15 @@ void print_m4(mat4 m){
     printf("\n");
 }
 
+int equal_m4(mat4 a, mat4 b) {
+    if (a.x.x != b.x.x || a.y.x != b.y.x || a.z.x != b.z.x || a.w.x != b.w.x) return 0;
+    if (a.x.y != b.x.y || a.y.y != b.y.y || a.z.y != b.z.y || a.w.y != b.w.y) return 0;
+    if (a.x.z != b.x.z || a.y.z != b.y.z || a.z.z != b.z.z || a.w.z != b.w.z) return 0;
+    if (a.x.w != b.x.w || a.y.w != b.y.w || a.z.w != b.z.w || a.w.w != b.w.w) return 0;
+    return 1;
+}
+
+
 mat4 scalar_m4(mat4 m1, float s){
     //just multiply everything by the s
     m1.x = scalar_v4(m1.x,s);

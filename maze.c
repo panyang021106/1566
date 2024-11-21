@@ -85,10 +85,11 @@ void print_maze(const Maze* maze) {
 
 int** maze_array(const Maze* maze) {
     int** maze_array = (int**)malloc(MAZE_SIZE * sizeof(int*));
-    for (int i = 0; i < MAZE_SIZE; i++) {
+    for (int i = MAZE_SIZE - 1; i >=0; i--) {
         maze_array[i] = (int*)malloc(MAZE_SIZE * sizeof(int));
-        for (int j = 0; j < MAZE_SIZE; j++) {
-            // Fill with zeros and ones based on maze cells
+        for (int j = MAZE_SIZE; j >= 0; j--) {
+            printf("(%d,%d) %d",i,j,maze->cells[i][j]);
+            // Fill with zeros and ones based on maze cell
         if (maze->cells[i][j] == 1) {
             maze_array[i][j] = 1; // 用 '#' 表示墙
         }
@@ -100,6 +101,7 @@ int** maze_array(const Maze* maze) {
 ; // 用 '.' 表示路径
             }        
     }
+    printf("\n");
     }
 
     return maze_array;
