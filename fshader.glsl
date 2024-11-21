@@ -12,8 +12,6 @@ vec4 ambient, diffuse, specular;
 uniform int use_ambient;
 uniform int use_diffuse;
 uniform int use_specular;
-uniform int use_flashlight;
-
 
 
 void main()
@@ -23,52 +21,28 @@ void main()
 		vec4 NN = normalize(N);
 		vec4 LL = normalize(L);
 		vec4 VV = normalize(V);
-		float attenuation = 1.0 / (.9 + .09 * D + .03 * D * D);
-		if(use_flashlight == 0){
-			if(use_ambient == 1){
-				ambient = 0.3 * the_color;
-			}
-			else{
-				ambient = vec4(0);
-			}
-			if(use_diffuse == 1){
-				diffuse = max(dot(LL, NN), 0.0) * the_color;
-			}
-			else{
-				diffuse = vec4(0);
-			}
-			if(use_specular == 1){
-				vec4 h = normalize(L + V);
-				float NH = max(dot(normalize(L + V),N),0);
-				specular = pow(NH,50) * the_color;
-			}
-			else{
-				specular = vec4(0);
-			}
+		float attenuation = max(1.0 / (.9 + .09 * D + .03 * D * D),0);
+		if(use_ambient == 1){
+			ambient = 0.5 * the_color;
 		}
 		else{
-			if(use_ambient == 1){
-				ambient = 0.3 * the_color;
-			}
-			else{
-				ambient = vec4(0);
-			}
-			if(use_diffuse == 1){
-				diffuse = max(dot(LL, NN), 0.0) * the_color;
-			}
-			else{
-				diffuse = vec4(0);
-			}
-			if(use_specular == 1){
-				vec4 h = normalize(L + V);
-				float NH = max(dot(normalize(L + V),N),0);
-				specular = pow(NH,50) * the_color;
-			}
-			else{
-				specular = vec4(0);
-			}
+			ambient = vec4(0);
 		}
-        gl_FragColor = ambient + attenuation * (diffuse  + specular);
+		if(use_diffuse == 1){
+			diffuse = max(dot(LL, NN), 0.0) *.8 * the_color;
+		}
+		else{
+			diffuse = vec4(0);
+		}
+		if(use_specular == 1){
+			vec4 H = normalize(LL + VV);
+			specular = pow(max(dot(NN,H),0),200) * vec4(1,1,1,1);
+		}
+		else{
+			specular = vec4(0);
+		}
+	
+	gl_FragColor = ambient + attenuation * (diffuse  + specular);
     }
     else {
         vec4 NN = normalize(N);

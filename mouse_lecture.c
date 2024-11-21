@@ -48,7 +48,7 @@ GLuint projection_location;
 GLuint model_view_location;
 mat4 projection;
 vec4 *ambient_colors;
-vec4 eye = {0, 0, 3, 0};
+vec4 eye = {0, 0, 2, 0};
 vec4 at = {0, 0.0, 0, 0};
 vec4 up = {0.0, 1, 0, 0.0};
 GLuint use_texture_location;
@@ -67,15 +67,11 @@ float bottom = -1;
 int use_ambient = 1;
 int use_diffuse = 1;
 int use_specular = 1;
-vec4 light_position = {0, 0, 5, 1};
+vec4 light_position = {0, 5, 0, 1};
 float light_radius = 5.0;
 float light_angle = 0.0;
 int use_flashlight = 0;
-void update()
-{
-    current_transformation_matrix = multiply_m4_m4(current_translation_matrix, multiply_m4_m4(current_rotation_matrix, current_scalar_matrix));
-    glutPostRedisplay();
-}
+
 void randomize_colors()
 {
     colors = (vec4 *)malloc(sizeof(vec4) * num_vertices);
@@ -100,8 +96,9 @@ void randomize_colors()
 }
 
 // texture one is top left, 2 is top row one to the left etc
-void make_cube(float x, float y, float z, int texture, float width)
+void make_cube(float x, float z, float y, int texture, float width)
 {
+    y = y - .75;
     mat4 translation = translation_m4(x, y, z);
     float hw = width / 2;
     cube[0] = (vec4){hw, -hw, hw, 1.0};
@@ -412,7 +409,7 @@ void display(void)
     glUniformMatrix4fv(model_view_location, 1, GL_FALSE, (GLfloat *)&model_view);
     glUniformMatrix4fv(projection_location, 1, GL_FALSE, (GLfloat *)&projection);
     glUniform4fv(light_position_location, 1, (GLfloat *)&light_position);
-    glUniformMatrix4fv(ctm_location, 1, GL_FALSE, (GLfloat *)&identity_ctm);
+    glUniformMatrix4fv(ctm_location, 1, GL_FALSE, (GLfloat *)&current_transformation_matrix);
     glDrawArrays(GL_TRIANGLES, 0, num_vertices);
 
     glutSwapBuffers();
@@ -475,15 +472,37 @@ void keyboard(unsigned char key, int mousex, int mousey)
     else if (key == 'e')
     {
         isAnimating = 0;
-        eye = (vec4){-2.0, 1.0, 2.0, 1.0};
-        at = (vec4){0.0, 0.0, 0.0, 1.0};
-        up = (vec4){0.0, 1.0, 0.0, 0.0};
+        eye = sub_v4((vec4){-2.0, 1.0, 2.0, 1.0}, eye);
+        at = sub_v4((vec4){0.0, 0.0, 0.0, 1.0},at);
+        up = sub_v4((vec4){0.0, 1.0, 0.0, 0.0}, up);
         model_view = look_at(eye, at, up);
         glutPostRedisplay();
     }
     else if(key == 't'){
         use_texture ^= 1;
         glUniform1i(use_texture_location, use_texture);
+    }
+    else if (key == 'n')
+    {
+        isAnimating = 0;
+    
+        vec4 direction = sub_v4(at, eye);
+        mat4 rotation = rotating_y_m4(-5.0); 
+        vec4 rotated_direction = multiply_m4_vec4(rotation, direction);
+        at = add_v4(eye, rotated_direction);
+        model_view = look_at(eye, at, up);
+        glutPostRedisplay();
+
+    }
+     else if (key == 'm')
+    {
+        isAnimating = 0;
+    vec4 direction = sub_v4(at, eye);
+    mat4 rotation = rotating_y_m4(5.0); 
+    vec4 rotated_direction = multiply_m4_vec4(rotation, direction);
+    at = add_v4(eye, rotated_direction);
+    model_view = look_at(eye, at, up);
+    glutPostRedisplay();
     }
     else if(key == 'y'){
         use_ambient ^= 1;
@@ -509,8 +528,10 @@ void keyboard(unsigned char key, int mousex, int mousey)
         use_flashlight^= 1;
         glUniform1i(use_flashlight_location, use_flashlight);
     }
+    else if(key == 'x'){
+    
+    }
 }
-
 void mouse(int button, int state, int x, int y)
 {
     ////printf("%i %i %i %i\n", button, state, x, y);
@@ -580,7 +601,7 @@ void motion(int x, int y)
 
     rotation_matrix = rotation_axis_angle_m4(about_vector, deg);
     current_rotation_matrix = multiply_m4_m4(rotation_matrix, current_rotation_matrix);
-    eye = multiply_m4_vec4(rotation_matrix, eye);
+    current_transformation_matrix = current_rotation_matrix;
     model_view = look_at(eye, at, up);
     last_touch = touch;
     touch = current_touch;
